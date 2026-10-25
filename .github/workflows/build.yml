@@ -1,0 +1,42 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Gradle 8.7
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        gradle-version: '8.7'
+
+    - name: Build Debug APK
+      run: |
+        # Automatically detects if files are at root or in an extracted subfolder
+        TARGET_DIR=$(find . -maxdepth 2 -name "settings.gradle.kts" -exec dirname {} \; | head -n 1)
+        if [ -n "$TARGET_DIR" ] && [ "$TARGET_DIR" != "." ]; then
+          echo "Switching to project directory: $TARGET_DIR"
+          cd "$TARGET_DIR"
+        fi
+        echo "Building in $(pwd)..."
+        gradle assembleDebug --stacktrace
+
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: AirTicket-Desk-APK
+        path: "**/build/outputs/apk/debug/*.apk"
